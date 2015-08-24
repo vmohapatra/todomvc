@@ -1,42 +1,46 @@
 
 <link rel="import" href="../bower_components/polymer/polymer.html">
-<link rel="import" href="../bower_components/core-selector/core-selector.html">
-<link rel="import" href="../bower_components/flatiron-director/flatiron-director.html">
+<link rel="import" href="../bower_components/iron-selector/iron-selector.html">
 <link rel="import" href="td-input.html">
 <link rel="import" href="td-item.html">
 
-<polymer-element name="td-todos" attributes="route modelId">
+<dom-module id="td-todos">
 	<template>
 		<link rel="stylesheet" href="td-todos.css">
-		<flatiron-director route="{{route}}"></flatiron-director>
 		<section id="todoapp">
 			<header id="header">
-				<input is="td-input" id="new-todo" placeholder="What needs to be done?" autofocus on-td-input-commit="{{addTodoAction}}" on-td-input-cancel="{{cancelAddTodoAction}}">
+				<input is="td-input" id="new-todo" placeholder="What needs to be done?" autofocus on-td-input-commit="addTodoAction" on-td-input-cancel="cancelAddTodoAction">
 			</header>
-			<section id="main" hidden?="{{model.items.length == 0}}">
-				<input id="toggle-all" type="checkbox" on-change="{{toggleAllCompletedAction}}" checked="{{model.allCompleted}}">
-				<label for="toggle-all">Mark all as complete</label>
-				<ul id="todo-list" on-td-item-changed="{{itemChangedAction}}" on-td-destroy-item="{{destroyItemAction}}">
-					<template repeat="{{model.filtered}}">
-						<li is="td-item" item="{{}}"></li>
+			<template is="dom-if" if="{{hasTodos(items.length)}}">
+				<section id="main">
+					<input id="toggle-all" type="checkbox" on-change="toggleAllCompletedAction" checked="{{model.allCompleted}}">
+					<label for="toggle-all">Mark all as complete</label>
+					<ul id="todo-list" on-td-item-changed="itemChangedAction" on-td-destroy-item="destroyItemAction:">
+						<template is="dom-repeat" items="{{items}}">
+							<li is="td-item" item="{{item}}"></li>
+						</template>
+					</ul>
+				</section>
+			</template>
+			<template is="dom-if" if="{{hasTodos(items.length)}}">
+				<footer id="footer">
+					<span id="todo-count"><strong>{{model.activeCount}}</strong><span>{{getItemWord()}}</span> left</span>
+					<iron-selector id="filters" selected="{{route || 'all'}}">
+						<li name="all">
+							<a href="../#/">All</a>
+						</li>
+						<li name="active">
+							<a href="../#/active">Active</a>
+						</li>
+						<li name="completed">
+							<a href="../#/completed">Completed</a>
+						</li>
+					</iron-selector>
+					<template is="dom-if" if="noneCompleted(model.completedCount)">
+						<button id="clear-completed" on-click="clearCompletedAction">Clear completed</button>
 					</template>
-				</ul>
-			</section>
-			<footer id="footer" hidden?="{{model.items.length == 0}}">
-				<span id="todo-count"><strong>{{model.activeCount}}</strong> {{model.activeCount == 1 ? 'item' : 'items'}} left</span>
-				<core-selector id="filters" selected="{{route || 'all'}}">
-					<li name="all">
-						<a href="../#/">All</a>
-					</li>
-					<li name="active">
-						<a href="../#/active">Active</a>
-					</li>
-					<li name="completed">
-						<a href="../#/completed">Completed</a>
-					</li>
-				</core-selector>
-				<button hidden?="{{model.completedCount == 0}}" id="clear-completed" on-click="{{clearCompletedAction}}">Clear completed</button>
-			</footer>
+				</footer>
+			</template>
 		</section>
 	</template>
 
@@ -44,7 +48,35 @@
 		(function() {
 			var ENTER_KEY = 13;
 			var ESC_KEY = 27;
-			Polymer('td-todos', {
+			Polymer({
+				is: 'td-todos',
+				properties: {
+					modelId: String,
+					items: {
+						type: Array
+					},
+					model: {
+						type: Object
+					},
+					route: String
+				},
+				ready: function() {
+					var self = this;
+					document.querySelector('#root')
+					.addEventListener('dom-change', function() {
+						// get a reference to the "model" which is our datastore interface
+						self.model = document.querySelector('#model');
+					});
+				},
+				noneCompleted: function(completedCount) {
+					return completedCount === 0;
+				},
+				getItemWord: function(activeCount) {
+					return activeCount === 1 ? 'item' : 'items';
+				},
+				hasTodos: function(todoCount) {
+					return todoCount > 0;
+				},
 				modelIdChanged: function() {
 					this.model = document.querySelector('#' + this.modelId);
 				},
@@ -56,7 +88,6 @@
 				addTodoAction: function() {
 					this.model.newItem(this.$['new-todo'].value);
 					// when polyfilling Object.observe, make sure we update immediately
-					Platform.flush();
 					this.$['new-todo'].value = '';
 				},
 				cancelAddTodoAction: function() {
@@ -80,4 +111,4 @@
 		})();
 	</script>
 
-</polymer-element>
+</dom-module>

@@ -1,26 +1,54 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
 <link rel="import" href="td-input.html">
 
-<polymer-element name="td-item" extends="li" attributes="item editing" on-blur="{{commitAction}}">
+<dom-module id="td-item">
 	<template>
 		<link rel="stylesheet" href="td-item.css">
-		<div class="view {{ {completed: item.completed, editing: editing} | tokenList }}" hidden?="{{editing}}" on-dblclick="{{editAction}}">
-			<input type="checkbox" class="toggle" checked="{{item.completed}}" on-click="{{itemChangeAction}}">
-			<label>{{item.title}}</label>
-			<button class="destroy" on-click="{{destroyAction}}"></button>
-		</div>
-		<input is="td-input" id="edit" class="edit" value="{{item.title}}" hidden?="{{!editing}}" on-td-input-commit="{{commitAction}}" on-td-input-cancel="{{cancelAction}}">
+		<template is="dom-if" if="{{!editing}}">
+			<div class$="{{itemClass}}" on-dblclick="editAction">
+				<input type="checkbox" class="toggle" checked$="{{item.completed}}" on-click="itemChangeAction">
+				<label>{{item.title}}</label>
+				<button class="destroy" on-click="destroyAction"></button>
+			</div>
+		</template>
+		<template is="dom-if" if="{{editing}}">
+			<input is="td-input" id="edit" class="edit" value="{{item.title}}" on-td-input-commit="commitAction" on-td-input-cancel="cancelAction">
+		</template>
 	</template>
 	<script>
 		(function() {
-			Polymer('td-item', {
-				editing: false,
+			Polymer({
+				is: 'td-item',
+				extends: 'li',
+				listeners: {
+					'blur': 'commitAction'
+				},
+				properties: {
+					editing: {
+						type: Boolean,
+						value: false
+					},
+					item: {
+						type: Object,
+						value: function() {
+							return {};
+						}
+					},
+					itemClass: {
+						type: String,
+						computed: 'getItemClass(item.completed, editing)'
+					}
+				},
+				getItemClass: function(completed, editing) {
+					var ret = 'view ';
+
+					ret += completed ? 'completed ' : '';
+					ret += editing ? 'editing' : '';
+
+					return ret;
+				},
 				editAction: function() {
 					this.editing = true;
-					// schedule focus for the end of microtask, when the input will be visible
-					this.asyncMethod(function() {
-						this.$.edit.focus();
-					});
 				},
 				commitAction: function() {
 					if (this.editing) {
@@ -44,4 +72,4 @@
 			});
 		})();
 	</script>
-</polymer-element>
+</dom-module>

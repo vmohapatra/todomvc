@@ -1,41 +1,21 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
 
-<polymer-element name="td-model" attributes="filter items storageId">
+<dom-module id="td-model">
+	<template>
+		<iron-localstorage name="todos-polymer" value="{{items}}" on-iron-localstorage-load-empty="initializeDefaultTodos"></iron-localstorage>
+	</template>
 	<script>
-		Polymer('td-model', {
-			filtered: null,
-			completedCount: 0,
-			activeCount: 0,
-			allCompleted: false,
-			ready: function() {
-				this.asyncMethod(function() {
-					this.items = this.storage.value || [];
-				});
-			},
-			filterChanged: function() {
-				this.asyncMethod(function() {
-					this.filterItems();
-				});
-			},
-			itemsChanged: function() {
-				this.completedCount = this.items.filter(this.filters.completed).length;
-				this.activeCount = this.items.length - this.completedCount;
-				this.allCompleted = this.completedCount && !this.activeCount;
-				this.filterItems();
-				if (this.storage) {
-					this.storage.value = this.items;
-					this.storage.save();
+		Polymer({
+			is: 'td-model',
+			properties: {
+				filter: String,
+				items: {
+					type: Array,
+					notify: true,
+					value: function() {
+						return []
+					}
 				}
-			},
-			storageIdChanged: function() {
-				this.storage = document.querySelector('#' + this.storageId);
-				if (this.storage) {
-					this.items = this.storage.value;
-				}
-			},
-			filterItems: function() {
-				var fn = this.filters[this.filter];
-				this.filtered = fn ? this.items.filter(fn) : this.items;
 			},
 			newItem: function(title) {
 				title = String(title).trim();
@@ -44,9 +24,32 @@
 						title: title,
 						completed: false
 					};
-					this.items.push(item);
+					this.push('items', item);
+					this.notifyPath('items', this.items);
 					this.itemsChanged();
 				}
+			},
+			filtered: null,
+			completedCount: 0,
+			activeCount: 0,
+			allCompleted: false,
+			filterChanged: function() {
+				this.async(function() {
+					this.filterItems();
+				});
+			},
+			initializeDefaultTodos: function() {
+				this.items = [];
+			},
+			itemsChanged: function() {
+				this.completedCount = this.items.filter(this.filters.completed).length;
+				this.activeCount = this.items.length - this.completedCount;
+				this.allCompleted = this.completedCount && !this.activeCount;
+				this.filterItems();
+			},
+			filterItems: function() {
+				var fn = this.filters[this.filter];
+				this.filtered = fn ? this.items.filter(fn) : this.items;
 			},
 			destroyItem: function(item) {
 				var i = this.items.indexOf(item);
@@ -72,6 +75,6 @@
 					return item.completed;
 				}
 			}
-	 });
+		});
 	</script>
-</polymer-element>
+</dom-module>
